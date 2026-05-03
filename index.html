@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ImposterMaster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Roboto:wght@300;400;700&display=swap');
+
+        :root {
+            --bg-space: #0b0e14;
+            --primary-red: #ff3e3e;
+            --primary-blue: #3e94ff;
+            --accent-gold: #ffd700;
+        }
+
+        body {
+            background-color: var(--bg-space);
+            color: white;
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        .font-orbitron {
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .card-gradient {
+            background: linear-gradient(145deg, #1a1f29, #11151c);
+            border: 1px solid #2d3748;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-action {
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: bold;
+        }
+
+        .btn-action:hover {
+            transform: translateY(-2px);
+            filter: brightness(1.2);
+        }
+
+        .role-reveal {
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .floating-emoji {
+            position: fixed;
+            z-index: -1;
+            opacity: 0.1;
+            font-size: 2rem;
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex items-center justify-center p-4">
+
+    <!-- Floating Background Elements -->
+    <div class="floating-emoji" style="top: 10%; left: 10%;">🚀</div>
+    <div class="floating-emoji" style="top: 80%; left: 15%;">⭐</div>
+    <div class="floating-emoji" style="top: 20%; right: 10%;">🛸</div>
+    <div class="floating-emoji" style="top: 70%; right: 20%;">🌠</div>
+
+    <div id="game-container" class="w-full max-w-md">
+
+        <!-- Pantalla 1: Selección de Jugadores -->
+        <div id="screen-setup" class="card-gradient rounded-3xl p-8 text-center">
+            <h1 class="text-4xl font-orbitron font-bold mb-6 text-primary-blue">IMPOSTER<span
+                    class="text-white">MASTER</span></h1>
+            <p class="text-gray-400 mb-8">Selecciona el número de participantes para iniciar la misión.</p>
+
+            <div class="grid grid-cols-2 gap-4 mb-8">
+                <button onclick="setPlayerCount(3)"
+                    class="btn-action bg-gray-800 p-4 rounded-xl border border-gray-700 hover:border-blue-500">3
+                    Jugadores</button>
+                <button onclick="setPlayerCount(4)"
+                    class="btn-action bg-gray-800 p-4 rounded-xl border border-gray-700 hover:border-blue-500">4
+                    Jugadores</button>
+                <button onclick="setPlayerCount(5)"
+                    class="btn-action bg-gray-800 p-4 rounded-xl border border-gray-700 hover:border-blue-500">5
+                    Jugadores</button>
+                <button onclick="setPlayerCount(6)"
+                    class="btn-action bg-gray-800 p-4 rounded-xl border border-gray-700 hover:border-blue-500">6
+                    Jugadores</button>
+            </div>
+            <p class="text-xs text-gray-500 italic">3-5 jugadores: 1 Impostor | 6 jugadores: 2 Impostores</p>
+        </div>
+
+        <!-- Pantalla 2: Registro de Nombres -->
+        <div id="screen-names" class="hidden card-gradient rounded-3xl p-8">
+            <h2 class="text-2xl font-orbitron font-bold mb-6 text-center">Registro de Tripulación</h2>
+            <div id="names-inputs" class="space-y-4 mb-8">
+                <!-- Se generarán dinámicamente -->
+            </div>
+            <button onclick="startGame()"
+                class="w-full btn-action bg-blue-600 py-4 rounded-xl shadow-lg shadow-blue-900/20">Iniciar
+                Asignación</button>
+        </div>
+
+        <!-- Pantalla 3: Revelación de Roles (Intermedio) -->
+        <div id="screen-turn" class="hidden card-gradient rounded-3xl p-8 text-center">
+            <h2 class="text-xl font-orbitron mb-4">Turno de:</h2>
+            <div id="current-player-name" class="text-4xl font-bold text-blue-400 mb-8">Nombre</div>
+            <p class="text-gray-400 mb-8">Asegúrate de que nadie más esté mirando la pantalla.</p>
+            <button onclick="showRole()" class="w-full btn-action bg-yellow-500 text-black py-4 rounded-xl">Ver Mi
+                Rol</button>
+        </div>
+
+        <!-- Pantalla 4: El Rol en sí -->
+        <div id="screen-reveal" class="hidden card-gradient rounded-3xl p-8 text-center">
+            <div id="role-display" class="role-reveal">
+                <h2 class="text-2xl font-orbitron mb-2">Tu Rol es:</h2>
+                <div id="role-name" class="text-5xl font-black mb-6 uppercase tracking-widest">ERROR</div>
+
+                <div id="secret-word-container" class="bg-black/40 p-6 rounded-2xl border border-white/10 mb-8">
+                    <p class="text-sm text-gray-400 mb-2">Palabra Secreta:</p>
+                    <div id="secret-word" class="text-3xl font-bold text-green-400">---</div>
+                </div>
+
+                <button onclick="nextPlayer()" id="next-btn"
+                    class="w-full btn-action bg-white text-black py-4 rounded-xl">Entendido, Siguiente</button>
+            </div>
+        </div>
+
+        <!-- Pantalla 5: Comienzo del Juego -->
+        <div id="screen-start" class="hidden card-gradient rounded-3xl p-8 text-center">
+            <div class="text-6xl mb-6">🚀</div>
+            <h2 class="text-3xl font-orbitron font-bold mb-4">¡Misión Iniciada!</h2>
+            <p class="text-gray-300 mb-8">Todos los roles han sido asignados. Empiecen a hablar y descubran quién es el
+                impostor.</p>
+            <button onclick="resetGame()" class="w-full btn-action bg-gray-700 py-4 rounded-xl">Reiniciar Juego</button>
+        </div>
+
+    </div>
+
+    <script>
+        // Configuración y Estado del Juego
+        let playerCount = 0;
+        let players = [];
+        let currentPlayerIndex = 0;
+        let secretWord = "";
+
+        const words = ["Espacio", "Oxígeno", "Motor", "Nave", "Escudo", "Radar", "Planeta", "Satélite", "Cometa", "Gravedad", "Astronauta", "Base", "Módulo", "Láser", "Cráter"];
+
+        const screens = {
+            setup: document.getElementById('screen-setup'),
+            names: document.getElementById('screen-names'),
+            turn: document.getElementById('screen-turn'),
+            reveal: document.getElementById('screen-reveal'),
+            start: document.getElementById('screen-start')
+        };
+
+        function showScreen(screenKey) {
+            Object.values(screens).forEach(s => s.classList.add('hidden'));
+            screens[screenKey].classList.remove('hidden');
+        }
+
+        // Paso 1: Seleccionar número de jugadores
+        function setPlayerCount(count) {
+            playerCount = count;
+            const container = document.getElementById('names-inputs');
+            container.innerHTML = '';
+
+            for (let i = 1; i <= count; i++) {
+                container.innerHTML += `
+                    <div>
+                        <label class="block text-xs text-gray-500 mb-1 ml-2 uppercase">Jugador ${i}</label>
+                        <input type="text" id="p-name-${i}" placeholder="Introduce nombre..." 
+                               class="w-full bg-gray-800 border border-gray-700 rounded-xl p-3 focus:outline-none focus:border-blue-500 text-white">
+                    </div>
+                `;
+            }
+            showScreen('names');
+        }
+
+        // Paso 2: Iniciar juego y asignar roles
+        function startGame() {
+            players = [];
+            for (let i = 1; i <= playerCount; i++) {
+                const name = document.getElementById(`p-name-${i}`).value.trim() || `Jugador ${i}`;
+                players.push({ name: name, role: 'tripulante', revealed: false });
+            }
+
+            // Seleccionar palabra secreta
+            secretWord = words[Math.floor(Math.random() * words.length)];
+
+            // Asignar Impostores
+            let impostorsCount = playerCount === 6 ? 2 : 1;
+            let assignedImpostors = 0;
+
+            while (assignedImpostors < impostorsCount) {
+                let randomIndex = Math.floor(Math.random() * playerCount);
+                if (players[randomIndex].role !== 'impostor') {
+                    players[randomIndex].role = 'impostor';
+                    assignedImpostors++;
+                }
+            }
+
+            currentPlayerIndex = 0;
+            updateTurnScreen();
+            showScreen('turn');
+        }
+
+        function updateTurnScreen() {
+            document.getElementById('current-player-name').innerText = players[currentPlayerIndex].name;
+        }
+
+        // Paso 3: Revelar rol individualmente
+        function showRole() {
+            const player = players[currentPlayerIndex];
+            const roleEl = document.getElementById('role-name');
+            const wordEl = document.getElementById('secret-word');
+            const wordContainer = document.getElementById('secret-word-container');
+
+            if (player.role === 'impostor') {
+                roleEl.innerText = "Impostor";
+                roleEl.className = "text-5xl font-black mb-6 uppercase tracking-widest text-red-500";
+                wordEl.innerText = "NO TIENES PALABRA";
+                wordEl.classList.add('text-red-400');
+                wordEl.classList.remove('text-green-400');
+            } else {
+                roleEl.innerText = "Tripulante";
+                roleEl.className = "text-5xl font-black mb-6 uppercase tracking-widest text-blue-400";
+                wordEl.innerText = secretWord;
+                wordEl.classList.add('text-green-400');
+                wordEl.classList.remove('text-red-400');
+            }
+
+            const btn = document.getElementById('next-btn');
+            if (currentPlayerIndex === players.length - 1) {
+                btn.innerText = "Finalizar Asignación";
+            } else {
+                btn.innerText = "Entendido, Siguiente";
+            }
+
+            showScreen('reveal');
+        }
+
+        function nextPlayer() {
+            currentPlayerIndex++;
+            if (currentPlayerIndex < players.length) {
+                updateTurnScreen();
+                showScreen('turn');
+            } else {
+                showScreen('start');
+            }
+        }
+
+        function resetGame() {
+            location.reload();
+        }
+    </script>
+</body>
+
+</html>
